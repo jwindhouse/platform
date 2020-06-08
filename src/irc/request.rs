@@ -28,7 +28,7 @@ pub struct Request {
 impl Request {
     pub fn clear_data(&mut self) {
         self.data = [0 as u8; BUFFER_SIZE];
-        self.messages = Vec::new();
+        self.messages.clear();
         self.size = 0;
     }
 
