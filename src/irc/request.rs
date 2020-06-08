@@ -37,17 +37,14 @@ impl Request {
     }
 
     pub fn messages(&mut self) -> &mut Vec<String> {
-        match self.messages.get(0) {
-            Some(_string) => &mut self.messages,
-            None => {
-                for message in self.string().split("\r\n") {
-                    if message != "" {
-                        self.messages.push(message.to_string());
-                    }
+        if self.messages.is_empty() {
+            for message in self.string().split("\r\n") {
+                if message != "" {
+                    self.messages.push(message.to_string());
                 }
-                &mut self.messages
             }
         }
+        &mut self.messages
     }
 
     pub fn size(&mut self) -> usize {
