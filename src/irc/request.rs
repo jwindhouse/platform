@@ -21,7 +21,7 @@ pub const BUFFER_SIZE: usize = 512;
 
 pub struct Request {
     data: [u8; BUFFER_SIZE],
-    messages: Vec<String>,
+    messages: Vec<super::message::Message>,
     size: usize,
 }
 
@@ -36,11 +36,11 @@ impl Request {
         &mut self.data
     }
 
-    pub fn messages(&mut self) -> &mut Vec<String> {
+    pub fn messages(&mut self) -> &mut Vec<super::message::Message> {
         if self.messages.is_empty() {
             for message in self.string().split("\r\n") {
                 if message != "" {
-                    self.messages.push(message.to_string());
+                    self.messages.push(super::message::from_string(message.to_string()));
                 }
             }
         }
