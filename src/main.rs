@@ -10,7 +10,12 @@ fn handle_client(mut stream: TcpStream) {
         Ok(_size) => {
             if request.valid() {
                 for message in request.messages() {
-                    println!("{:?}", message);
+                    let message = irc::message::from_string(message.to_string());
+                    println!("String:    {:?}", message.string());
+                    println!("Command:   {:?}", message.command());
+                    for p in message.parameters() {
+                        println!("Parameter: {:?}", p);
+                    }
                 }
             }
             request.clear_data();

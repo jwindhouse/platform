@@ -71,7 +71,7 @@ impl Request {
 
     pub fn valid(&mut self) -> bool {
         let size = self.size();
-        if size > 0 && self.data[size - 1] == b'\n' && self.data[size - 2] == b'\r' {
+        if size > 2 && self.data[size - 1] == b'\n' && self.data[size - 2] == b'\r' {
             true
         } else {
             false
