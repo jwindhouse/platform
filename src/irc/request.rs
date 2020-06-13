@@ -40,7 +40,8 @@ impl Request {
         if self.messages.is_empty() {
             for message in self.string().split("\r\n") {
                 if message != "" {
-                    self.messages.push(super::message::from_string(message.to_string()));
+                    self.messages
+                        .push(super::message::from_string(message.to_string()));
                 }
             }
         }
