@@ -17,22 +17,20 @@
 
 use std::str::from_utf8;
 
-pub const BUFFER_SIZE: usize = 512;
-
 pub struct Request {
-    data: [u8; BUFFER_SIZE],
+    data: [u8; super::BUFFER_SIZE],
     messages: Vec<super::message::Message>,
     size: usize,
 }
 
 impl Request {
     pub fn clear_data(&mut self) {
-        self.data = [0 as u8; BUFFER_SIZE];
+        self.data = [0 as u8; super::BUFFER_SIZE];
         self.messages.clear();
         self.size = 0;
     }
 
-    pub fn data(&mut self) -> &mut [u8; BUFFER_SIZE] {
+    pub fn data(&mut self) -> &mut [u8; super::BUFFER_SIZE] {
         &mut self.data
     }
 
@@ -82,7 +80,7 @@ impl Request {
 
 pub fn new() -> Request {
     Request {
-        data: [0 as u8; BUFFER_SIZE],
+        data: [0 as u8; super::BUFFER_SIZE],
         messages: Vec::new(),
         size: 0,
     }

@@ -15,5 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Platform.  If not, see <https://www.gnu.org/licenses/>.
 
+pub const BUFFER_SIZE: usize = 512;
+
 pub mod message;
 pub mod request;
