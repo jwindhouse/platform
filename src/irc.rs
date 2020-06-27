@@ -22,7 +22,7 @@ use std::io;
 use std::io::Read;
 use std::net::{TcpListener, TcpStream};
 use std::str::from_utf8;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Condvar, Mutex, RwLock};
 use std::thread::JoinHandle;
 use std::{thread, time};
 
@@ -30,20 +30,20 @@ pub const BUFFER_SIZE: usize = 512;
 
 pub struct Listener {
     bind_string: String,
+    request_queue: Arc<(Mutex<VecDeque<(TcpStream, Request)>>, Condvar)>,
     run: Arc<RwLock<bool>>,
-    request_queue: Arc<RwLock<VecDeque<(TcpStream, Request)>>>,
 }
 
 impl Listener {
-    pub fn clone_request_queue(&self) -> Arc<RwLock<VecDeque<(TcpStream, Request)>>> {
+    pub fn clone_request_queue(&self) -> Arc<(Mutex<VecDeque<(TcpStream, Request)>>, Condvar)> {
         self.request_queue.clone()
     }
 
     pub fn run(&self) -> JoinHandle<()> {
         // Clone self variables to be moved into new thread
         let bind_string = self.bind_string.clone();
-        let run = self.run.clone();
         let request_queue = self.request_queue.clone();
+        let run = self.run.clone();
 
         thread::spawn(move || {
             // Create non-blocking TCP listener
@@ -87,12 +87,13 @@ impl Listener {
                             // skip these streams and do not add them back to the
                             // streams queue
                             if size > 0 {
-                                // Queue the request for IRC worker threads
-                                {
-                                    let mut request_queue = request_queue.write().unwrap();
-                                    let s_clone = s.try_clone().unwrap();
-                                    request_queue.push_back((s_clone, request));
-                                }
+                                // Queue the request for IRC worker threads and notify them
+                                let (request_queue, cvar) = &*request_queue;
+                                let s_clone = s.try_clone().unwrap();
+                                let mut request_queue = request_queue.lock().unwrap();
+                                request_queue.push_back((s_clone, request));
+                                drop(request_queue);
+                                cvar.notify_one();
 
                                 // Put the stream on the back of the stream queue for
                                 // later processing
@@ -129,8 +130,8 @@ impl Listener {
     pub fn new() -> Listener {
         Listener {
             bind_string: String::new(),
+            request_queue: Arc::new((Mutex::new(VecDeque::new()), Condvar::new())),
             run: Arc::new(RwLock::new(true)),
-            request_queue: Arc::new(RwLock::new(VecDeque::new())),
         }
     }
 }
