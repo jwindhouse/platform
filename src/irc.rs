@@ -47,7 +47,12 @@ impl Listener {
 
         thread::spawn(move || {
             // Create non-blocking TCP listener
-            let listener = TcpListener::bind(bind_string).unwrap();
+            let listener = match TcpListener::bind(bind_string.clone()) {
+                Ok(listener) => listener,
+                Err(_e) => {
+                    panic!("Could not bind to address: {:?}", bind_string);
+                }
+            };
             listener
                 .set_nonblocking(true)
                 .expect("Cannot set non-blocking on listener");
@@ -60,7 +65,10 @@ impl Listener {
             let mut streams = VecDeque::new();
 
             // While self.run equals true run the loop
-            while *run.read().unwrap() {
+            while match run.read() {
+                Ok(run) => *run,
+                Err(_e) => false,
+            } {
                 // Accept new connections and queue them for later processing
                 match listener.accept() {
                     Ok((s, _addr)) => {
@@ -75,7 +83,12 @@ impl Listener {
                 let mut i = 0;
                 while i < streams.len() {
                     // Remove the first stream from the top of the stream queue
-                    let mut s = streams.pop_front().unwrap();
+                    let mut s = match streams.pop_front() {
+                        Some(s) => s,
+                        None => {
+                            break;
+                        }
+                    };
 
                     // Create new IRC request
                     let mut request = Request::new();
@@ -89,11 +102,29 @@ impl Listener {
                             if size > 0 {
                                 // Queue the request for IRC worker threads and notify them
                                 let (request_queue, cvar) = &*request_queue;
-                                let s_clone = s.try_clone().unwrap();
-                                let mut request_queue = request_queue.lock().unwrap();
-                                request_queue.push_back((s_clone, request));
-                                drop(request_queue);
-                                cvar.notify_one();
+                                let s_clone = match s.try_clone() {
+                                    Ok(s_clone) => s_clone,
+                                    Err(_e) => {
+                                        i = i + 1;
+                                        continue;
+                                    }
+                                };
+                                match request_queue.lock() {
+                                    Ok(mut request_queue) => {
+                                        request_queue.push_back((s_clone, request));
+                                        drop(request_queue);
+                                        cvar.notify_one();
+                                    }
+                                    Err(_e) => {
+                                        match run.write() {
+                                            Ok(mut run) => {
+                                                *run = false;
+                                            }
+                                            Err(_e) => {}
+                                        }
+                                        break;
+                                    }
+                                }
 
                                 // Put the stream on the back of the stream queue for
                                 // later processing
@@ -124,7 +155,12 @@ impl Listener {
     }
 
     pub fn stop(&self) {
-        *self.run.write().unwrap() = false;
+        match self.run.write() {
+            Ok(mut run) => {
+                *run = false;
+            }
+            Err(_e) => {}
+        }
     }
 
     pub fn new() -> Listener {
