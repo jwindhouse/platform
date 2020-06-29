@@ -232,7 +232,10 @@ impl Request {
 
     pub fn string(&mut self) -> String {
         let size = self.size();
-        from_utf8(&self.data()[..size]).unwrap().to_string()
+        match from_utf8(&self.data()[..size]) {
+            Ok(s) => s.to_string(),
+            Err(_e) => "".to_string(),
+        }
     }
 
     pub fn valid(&mut self) -> bool {
