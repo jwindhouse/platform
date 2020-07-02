@@ -66,11 +66,12 @@ impl Listener {
             } {
                 // Accept new connections and queue them for later processing
                 match listener.accept() {
-                    Ok((s, _addr)) => {
-                        s.set_nonblocking(true)
-                            .expect("Cannot set non-blocking on stream");
-                        streams.push_back(s);
-                    }
+                    Ok((s, _addr)) => match s.set_nonblocking(true) {
+                        Ok(_r) => {
+                            streams.push_back(s);
+                        }
+                        Err(_e) => {}
+                    },
                     Err(_e) => {}
                 }
 
