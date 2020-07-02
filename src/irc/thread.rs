@@ -15,22 +15,22 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Platform.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate::irc::message::Request;
+use crate::irc::message::{Connection, Request};
 use std::collections::VecDeque;
 use std::io::{ErrorKind, Read};
-use std::net::{TcpListener, TcpStream};
+use std::net::TcpListener;
 use std::sync::{Arc, Condvar, Mutex, RwLock};
 use std::thread::{sleep, spawn, JoinHandle};
 use std::time;
 
 pub struct Listener {
     bind_string: String,
-    request_queue: Arc<(Mutex<VecDeque<(TcpStream, Request)>>, Condvar)>,
+    request_queue: Arc<(Mutex<VecDeque<(Connection, Request)>>, Condvar)>,
     run: Arc<RwLock<bool>>,
 }
 
 impl Listener {
-    pub fn clone_request_queue(&self) -> Arc<(Mutex<VecDeque<(TcpStream, Request)>>, Condvar)> {
+    pub fn clone_request_queue(&self) -> Arc<(Mutex<VecDeque<(Connection, Request)>>, Condvar)> {
         self.request_queue.clone()
     }
 
@@ -105,9 +105,10 @@ impl Listener {
                                         continue;
                                     }
                                 };
+                                let c = Connection::new(s_clone);
                                 match request_queue.lock() {
                                     Ok(mut request_queue) => {
-                                        request_queue.push_back((s_clone, request));
+                                        request_queue.push_back((c, request));
                                         drop(request_queue);
                                         cvar.notify_one();
                                     }
