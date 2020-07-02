@@ -16,7 +16,37 @@
 // along with Platform.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::irc::BUFFER_SIZE;
+use std::net::TcpStream;
+use std::net::{IpAddr, Ipv4Addr};
 use std::str::from_utf8;
+
+pub struct Connection {
+    tcp_stream: TcpStream,
+}
+
+impl Connection {
+    pub fn id(&self) -> String {
+        let ip = match self.tcp_stream.peer_addr() {
+            Ok(addr) => addr.ip(),
+            Err(_e) => IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)),
+        };
+        let port = match self.tcp_stream.peer_addr() {
+            Ok(addr) => addr.port(),
+            Err(_e) => 0,
+        };
+        format!("{:}:{:}", ip, port)
+    }
+
+    pub fn stream(&self) -> &TcpStream {
+        &self.tcp_stream
+    }
+
+    pub fn new(tcp_stream: TcpStream) -> Connection {
+        Connection {
+            tcp_stream: tcp_stream,
+        }
+    }
+}
 
 pub struct Message {
     command: String,
