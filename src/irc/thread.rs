@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Platform.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate::irc::Request;
+use crate::irc::message::Request;
 use std::collections::VecDeque;
 use std::io::{ErrorKind, Read};
 use std::net::{TcpListener, TcpStream};
