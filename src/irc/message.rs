@@ -113,7 +113,7 @@ impl Request {
         &mut self.data
     }
 
-    pub fn messages(&mut self) -> &mut Vec<Message> {
+    pub fn messages(&mut self) -> &Vec<Message> {
         if self.messages.is_empty() {
             for message in self.string().split("\r\n") {
                 if message != "" {
@@ -122,7 +122,7 @@ impl Request {
                 }
             }
         }
-        &mut self.messages
+        &self.messages
     }
 
     pub fn size(&mut self) -> usize {
