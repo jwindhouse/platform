@@ -51,10 +51,13 @@ impl Connection {
 pub struct Message {
     command: String,
     parameters: Vec<String>,
-    string: String,
 }
 
 impl Message {
+    pub fn add_parameter(&mut self, parameter: &str) {
+        self.parameters.push(parameter.to_string());
+    }
+
     pub fn command(&self) -> &String {
         &self.command
     }
@@ -63,8 +66,24 @@ impl Message {
         &self.parameters
     }
 
-    pub fn string(&self) -> &String {
-        &self.string
+    pub fn set_command(&mut self, command: &str) {
+        self.command = command.to_string();
+    }
+
+    pub fn string(&self) -> String {
+        let mut string = String::new();
+        string.push_str(&self.command);
+        for p in &self.parameters {
+            string.push_str(" ");
+            if p.contains(" ") {
+                string.push_str(":");
+                string.push_str(&p);
+                break;
+            }
+            string.push_str(&p);
+        }
+        string.push_str("\r\n");
+        string
     }
 
     pub fn from_string(string: String) -> Message {
@@ -91,7 +110,13 @@ impl Message {
         Message {
             command: command,
             parameters: parameters,
-            string: string,
+        }
+    }
+
+    pub fn new() -> Message {
+        Message {
+            command: String::new(),
+            parameters: Vec::new(),
         }
     }
 }
