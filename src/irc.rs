@@ -17,9 +17,11 @@
 
 #![allow(dead_code)]
 
+pub use service::Service;
 pub use thread::Listener;
 
 pub const BUFFER_SIZE: usize = 512;
 
 mod message;
+mod service;
 mod thread;
