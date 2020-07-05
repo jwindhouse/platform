@@ -16,6 +16,7 @@
 // along with Platform.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::irc::message::{Connection, Request};
+use crate::irc::service::Service;
 use std::collections::VecDeque;
 use std::io::{ErrorKind, Read};
 use std::net::TcpListener;
@@ -165,6 +166,79 @@ impl Listener {
             bind_string: String::new(),
             request_queue: Arc::new((Mutex::new(VecDeque::new()), Condvar::new())),
             run: Arc::new(RwLock::new(true)),
+        }
+    }
+}
+
+pub struct Worker {
+    request_queue: Arc<(Mutex<VecDeque<(Connection, Request)>>, Condvar)>,
+    run: Arc<RwLock<bool>>,
+    service: Arc<Service>,
+}
+
+impl Worker {
+    pub fn run(&self) -> JoinHandle<()> {
+        // Clone self variables to be moved into new thread.
+        let request_queue = self.request_queue.clone();
+        let run = self.run.clone();
+        let service = self.service.clone();
+
+        spawn(move || {
+            // While self.run equals true run the loop.
+            while match run.read() {
+                Ok(run) => *run,
+                Err(_e) => false,
+            } {
+                let (lock, cvar) = &*request_queue;
+                match lock.lock() {
+                    Ok(mut request_queue) => {
+                        // If the request_queue is empty then wait to be notified by the Condvar.
+                        if request_queue.is_empty() {
+                            request_queue = match cvar.wait(request_queue) {
+                                Ok(request_queue) => request_queue,
+                                Err(_e) => {
+                                    break;
+                                }
+                            }
+                        }
+                        match request_queue.pop_front() {
+                            Some((connection, mut request)) => {
+                                // Drop the request_queue lock
+                                drop(request_queue);
+                                // Call service.reply to do the actual work.
+                                service.reply(&connection, &mut request);
+                            }
+                            None => {}
+                        }
+                    }
+                    Err(_e) => {
+                        break;
+                    }
+                }
+            }
+        })
+    }
+
+    pub fn stop(&self) {
+        match self.run.write() {
+            Ok(mut run) => {
+                *run = false;
+            }
+            Err(_e) => {}
+        }
+
+        let (_lock, cvar) = &*self.request_queue;
+        cvar.notify_all();
+    }
+
+    pub fn new(
+        request_queue: Arc<(Mutex<VecDeque<(Connection, Request)>>, Condvar)>,
+        service: Arc<Service>,
+    ) -> Worker {
+        Worker {
+            request_queue: request_queue,
+            run: Arc::new(RwLock::new(true)),
+            service: service,
         }
     }
 }

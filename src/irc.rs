@@ -19,6 +19,7 @@
 
 pub use service::Service;
 pub use thread::Listener;
+pub use thread::Worker;
 
 pub const BUFFER_SIZE: usize = 512;
 
