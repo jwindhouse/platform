@@ -15,6 +15,18 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Platform.  If not, see <https://www.gnu.org/licenses/>.
 
+extern crate num_cpus;
+
 mod irc;
 
-fn main() {}
+fn main() {
+    let mut listener = irc::Listener::new();
+    let service = irc::Service::new();
+    for _ in 0..num_cpus::get() {
+        let worker = irc::Worker::new(listener.clone_request_queue(), service.clone());
+        let _ = worker.run();
+    }
+    listener.set_bind_string("127.0.0.1:6667".to_string());
+    let t = listener.run();
+    let _ = t.join();
+}
