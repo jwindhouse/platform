@@ -16,8 +16,10 @@
 // along with Platform.  If not, see <https://www.gnu.org/licenses/>.
 
 use crate::irc::BUFFER_SIZE;
+use std::io::ErrorKind;
 use std::net::TcpStream;
 use std::net::{IpAddr, Ipv4Addr};
+use std::ops::Add;
 use std::str::from_utf8;
 
 pub struct Connection {
@@ -118,6 +120,61 @@ impl Message {
             command: String::new(),
             parameters: Vec::new(),
         }
+    }
+}
+
+pub struct Reply {
+    messages: Vec<Message>,
+}
+
+impl Reply {
+    pub fn add_message(&mut self, message: Message) {
+        self.messages.push(message);
+    }
+
+    pub fn add_messages(&mut self, messages: &mut Vec<Message>) {
+        self.messages.append(messages);
+    }
+
+    pub fn mut_messages(&mut self) -> &mut Vec<Message> {
+        &mut self.messages
+    }
+
+    pub fn strings(&self) -> Result<Vec<String>, ErrorKind> {
+        let mut data = Vec::new();
+        let mut buffer = String::new();
+        for message in &self.messages {
+            let string = message.string();
+            if string.as_bytes().len() > BUFFER_SIZE {
+                return Err(ErrorKind::InvalidData);
+            }
+            if buffer.as_bytes().len() + string.as_bytes().len() <= BUFFER_SIZE {
+                buffer.push_str(&string);
+            } else {
+                data.push(buffer);
+                buffer = message.string();
+            }
+        }
+        if !buffer.is_empty() {
+            data.push(buffer);
+        }
+        Ok(data)
+    }
+
+    pub fn new() -> Reply {
+        Reply {
+            messages: Vec::new(),
+        }
+    }
+}
+
+impl Add for Reply {
+    type Output = Self;
+    fn add(mut self, mut other: Self) -> Self {
+        let mut reply = Reply::new();
+        reply.add_messages(self.mut_messages());
+        reply.add_messages(other.mut_messages());
+        reply
     }
 }
 
