@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with Platform.  If not, see <https://www.gnu.org/licenses/>.
 
-use crate::irc::message::{Connection, Message, Request};
+use crate::irc::message::{Connection, Message, Reply, Request};
 use std::io::Write;
 use std::net::Shutdown;
 use std::sync::Arc;
@@ -24,6 +24,9 @@ pub struct Service {}
 
 impl Service {
     pub fn reply(&self, connection: &Connection, request: &mut Request) {
+        // Create a queue to store replies.
+        let mut replies = Reply::new();
+
         // Iterate over each message in the request.
         for message in request.messages() {
             println!("{:} -> {:?}", connection.id(), message.string()); // Remove me later
@@ -36,47 +39,55 @@ impl Service {
                 _ => None,
             };
 
-            // If there is a reply write it back to the connection stream.
+            // If a reply was generated add it to the replies queue.
             match reply {
                 Some(reply) => {
-                    println!("{:} <- {:?}", connection.id(), reply.string()); // Remove me later
-
-                    // Write reply to connection stream
-                    match connection.stream().write(&reply.string().as_bytes()) {
-                        Ok(_r) => {}
-                        // If we can't write to stream shut it down.
-                        Err(_e) => match connection.stream().shutdown(Shutdown::Both) {
-                            Ok(_r) => {}
-                            Err(_e) => {}
-                        },
-                    }
+                    replies = replies + reply;
                 }
                 None => {}
             }
         }
 
+        // If there is a reply write it back to the connection stream.
+        for string in replies.strings().unwrap() {
+            println!("{:} <- {:?}", connection.id(), string); // Remove me later
+
+            match connection.stream().write(string.as_bytes()) {
+                Ok(_r) => {}
+                // If we can't write to stream shut it down.
+                Err(_e) => match connection.stream().shutdown(Shutdown::Both) {
+                    Ok(_r) => {}
+                    Err(_e) => {}
+                },
+            }
+        }
+
         // Flush the connection stream after replies have been written.
-        match connection.stream().flush() {
-            Ok(_r) => {}
-            Err(_e) => {}
+        if !replies.strings().unwrap().is_empty() {
+            match connection.stream().flush() {
+                Ok(_r) => {}
+                Err(_e) => {}
+            }
         }
     }
 
-    fn reply_cap(&self, _id: String, message: &Message) -> Option<Message> {
+    fn reply_cap(&self, _id: String, message: &Message) -> Option<Reply> {
         match message.parameters()[0].to_uppercase().as_ref() {
             "LS" => {
-                let reply = Message::from_string("CAP * LS : ".to_string());
+                let mut reply = Reply::new();
+                let message = Message::from_string("CAP * LS : ".to_string());
+                reply.add_message(message);
                 Some(reply)
             }
             _ => None,
         }
     }
 
-    fn reply_nick(&self, _id: String, _message: &Message) -> Option<Message> {
+    fn reply_nick(&self, _id: String, _message: &Message) -> Option<Reply> {
         None
     }
 
-    fn reply_user(&self, _id: String, _message: &Message) -> Option<Message> {
+    fn reply_user(&self, _id: String, _message: &Message) -> Option<Reply> {
         None
     }
 
