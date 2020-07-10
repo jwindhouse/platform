@@ -32,8 +32,7 @@ SMTP is another proven one to many communications protocol with ubiquitous
 client support. It only makes sense to support email as an asynchronous
 communication method.
 
-[en.wikipedia.org/wiki/Simple\_Mail\_Transfer_Protocol]
-(https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol)
+[en.wikipedia.org/wiki/Simple\_Mail\_Transfer_Protocol](https://en.wikipedia.org/wiki/Simple_Mail_Transfer_Protocol)
 
 ## Building the Project ##
 
@@ -69,8 +68,7 @@ Project commit messages should follow the 50/72 style.
 #### Rust ####
 
 All code written in Rust should follow the
-[Rust Style Guide]
-(https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/guide.md).
+[Rust Style Guide](https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/guide.md).
 Thankfully the `rustfmt` tool will largely do this for you.
 
 `rustfmt --check src/main.rs`
