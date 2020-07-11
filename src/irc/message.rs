@@ -53,6 +53,7 @@ impl Connection {
 pub struct Message {
     command: String,
     parameters: Vec<String>,
+    prefix: String,
 }
 
 impl Message {
