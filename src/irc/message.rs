@@ -73,6 +73,10 @@ impl Message {
         self.command = command.to_string();
     }
 
+    pub fn set_prefix(&mut self, prefix: &str) {
+        self.prefix = prefix.to_string();
+    }
+
     pub fn string(&self) -> String {
         let mut string = String::new();
         if !self.prefix.is_empty() {
