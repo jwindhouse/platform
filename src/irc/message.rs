@@ -53,6 +53,7 @@ impl Connection {
 pub struct Message {
     command: String,
     parameters: Vec<String>,
+    prefix: String,
 }
 
 impl Message {
@@ -72,8 +73,17 @@ impl Message {
         self.command = command.to_string();
     }
 
+    pub fn set_prefix(&mut self, prefix: &str) {
+        self.prefix = prefix.to_string();
+    }
+
     pub fn string(&self) -> String {
         let mut string = String::new();
+        if !self.prefix.is_empty() {
+            string.push_str(":");
+            string.push_str(&self.prefix);
+            string.push_str(" ");
+        }
         string.push_str(&self.command);
         for p in &self.parameters {
             string.push_str(" ");
@@ -89,29 +99,30 @@ impl Message {
     }
 
     pub fn from_string(string: String) -> Message {
+        let mut prefix = String::new();
+        let mut command = String::new();
         let mut parameters = Vec::new();
 
-        {
-            let mut buffer = String::new();
-            let mut skip = false;
-            for c in string.chars() {
-                if c == ' ' && !skip {
-                    parameters.push(buffer.to_string());
-                    buffer.clear();
-                } else if c == ':' && !skip {
-                    skip = true;
+        for (i, p) in string.split(' ').enumerate() {
+            if i == 0 {
+                if p.chars().nth(0) == Some(':') {
+                    let mut p = p.to_string();
+                    p.remove(0);
+                    prefix = p;
                 } else {
-                    buffer.push(c);
+                    command = p.to_string();
                 }
+            } else if i == 1 && !prefix.is_empty() {
+                command = p.to_string();
+            } else {
+                parameters.push(p.to_string());
             }
-            parameters.push(buffer.to_string());
         }
-
-        let command = parameters.remove(0);
 
         Message {
             command: command,
             parameters: parameters,
+            prefix: prefix,
         }
     }
 
@@ -119,6 +130,7 @@ impl Message {
         Message {
             command: String::new(),
             parameters: Vec::new(),
+            prefix: String::new(),
         }
     }
 }
