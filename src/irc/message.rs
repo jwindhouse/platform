@@ -75,6 +75,11 @@ impl Message {
 
     pub fn string(&self) -> String {
         let mut string = String::new();
+        if !self.prefix.is_empty() {
+            string.push_str(":");
+            string.push_str(&self.prefix);
+            string.push_str(" ");
+        }
         string.push_str(&self.command);
         for p in &self.parameters {
             string.push_str(" ");
