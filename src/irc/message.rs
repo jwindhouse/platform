@@ -120,6 +120,7 @@ impl Message {
         Message {
             command: String::new(),
             parameters: Vec::new(),
+            prefix: String::new(),
         }
     }
 }
