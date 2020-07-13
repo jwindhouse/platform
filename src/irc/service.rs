@@ -72,14 +72,17 @@ impl Service {
     }
 
     fn reply_cap(&self, _id: String, message: &Message) -> Option<Reply> {
-        match message.parameters()[0].to_uppercase().as_ref() {
-            "LS" => {
-                let mut reply = Reply::new();
-                let message = Message::from_string("CAP * LS : ".to_string());
-                reply.add_message(message);
-                Some(reply)
-            }
-            _ => None,
+        match message.parameters().get(0) {
+            Some(p) => match p.to_uppercase().as_ref() {
+                "LS" => {
+                    let mut reply = Reply::new();
+                    let message = Message::from_string("CAP * LS : ".to_string());
+                    reply.add_message(message);
+                    Some(reply)
+                }
+                _ => None,
+            },
+            None => None,
         }
     }
 
