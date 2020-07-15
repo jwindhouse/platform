@@ -102,6 +102,7 @@ impl Message {
         let mut prefix = String::new();
         let mut command = String::new();
         let mut parameters = Vec::new();
+        let mut last_parameter = String::new();
 
         for (i, p) in string.split(' ').enumerate() {
             if i == 0 {
@@ -114,9 +115,22 @@ impl Message {
                 }
             } else if i == 1 && !prefix.is_empty() {
                 command = p.to_string();
+            } else if !last_parameter.is_empty() {
+                last_parameter.push_str(p);
+                last_parameter.push_str(" ");
+            } else if p.chars().nth(0) == Some(':') {
+                let mut p = p.to_string();
+                p.remove(0);
+                last_parameter.push_str(&p);
+                last_parameter.push_str(" ");
             } else {
                 parameters.push(p.to_string());
             }
+        }
+
+        if !last_parameter.is_empty() {
+            last_parameter.pop();
+            parameters.push(last_parameter);
         }
 
         Message {
